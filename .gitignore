@@ -1,4 +1,4 @@
 /dataset/*
-/lightnintg_logs/*
+*/lightnintg_logs/*
 
 */__pycache__/*
