@@ -1,5 +1,5 @@
 /dataset/*
 */lightning_logs/*
-
+/lightning_logs/*
 */__pycache__/*
 /core/*/__pycache__/*

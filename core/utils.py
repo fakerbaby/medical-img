@@ -1,4 +1,5 @@
 import os
+import time
 from pathlib2 import Path
 
 
@@ -23,7 +24,7 @@ def load_model_path(root=None, version=None, v_num=None, best=False):
         if root is not None:
             return root
         elif version is not None:
-            return str(Path('lightning_logs', version, 'checkpoints'))
+            return str(Path('lightning_logs', f'date {time.strftime("%Y-%m-%d", time.localtime())}', version, 'checkpoints'))
         else:
             return str(Path('lightning_logs', f'version_{v_num}', 'checkpoints'))
 

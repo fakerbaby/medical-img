@@ -21,7 +21,6 @@ class ImgData(Dataset):
         # Set all input args as attributes
         self.__dict__.update(locals())
         self.aug = train and not no_augment
-        
         self.check_files()
         
     
@@ -42,7 +41,7 @@ class ImgData(Dataset):
         return len(self.path_list)
     
     def to_one_hot(self, idx):
-        out = np.zeros(self.class_num, dtype=float)
+        out = np.zeros(self.class_num, dtype='int64')
         out[idx] = 1
         return out
     
@@ -54,7 +53,7 @@ class ImgData(Dataset):
         # img = im.transpose(1,2,0)
         label = self.label_dict.iloc[idx, 1]
         labels = self.to_one_hot(label)
-        labels = torch.from_numpy(labels).float()
+        labels = torch.from_numpy(labels)
         
         trans = transforms.Compose([
             transforms.RandomHorizontalFlip(self.aug_prob),

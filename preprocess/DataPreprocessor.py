@@ -1,10 +1,3 @@
-"""
-@time = time
-@author = shenwei
-"""
-from asyncio.log import logger
-from email.mime import base
-from hashlib import new
 import os
 import shutil
 import re

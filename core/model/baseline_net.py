@@ -7,7 +7,7 @@ import torchvision.models as models
 class BaselineNet(nn.Module):
     def __init__(self):
         super().__init__()
-        self.module = models.resnet152(pretrained = True)
+        self.module = models.resnet18(pretrained = True)
         self.classifier = nn.Sequential(
             nn.Linear(1000, 2), 
             nn.Sigmoid()

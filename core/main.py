@@ -66,12 +66,13 @@ def main(args):
 if __name__ == '__main__':
     parser = ArgumentParser()
     
-    parser.add_argument('--batch_size', default=32, type=int)
-    parser.add_argument('--num_workers', default=48, type=int)
+    parser.add_argument('--batch_size', default=10, type=int)
+    parser.add_argument('--num_workers', default=0, type=int)
     parser.add_argument('--seed', default=1234, type=int)
-    parser.add_argument('--lr', default=1e-3, type=float)
+    parser.add_argument('--lr', default=1e-6, type=float)
 
     # LR Scheduler
+    parser.add_argument('--optimizer', choices=['Adam', 'SGD', 'AdamW'], type=str)
     parser.add_argument('--lr_scheduler', choices=['step', 'cosine'], type=str)
     parser.add_argument('--lr_decay_steps', default=20, type=int)
     parser.add_argument('--lr_decay_rate', default=0.5, type=float)
@@ -100,6 +101,11 @@ if __name__ == '__main__':
 
     # Other
     parser.add_argument('--aug_prob', default=0.5, type=float)
+
+    #focal_loss HP
+    parser.add_argument('--alpha', default=0.25, type=float)
+    parser.add_argument('--gamma', default=2, type=int)
+
 
     # Add pytorch lightning's args to parser as a group.
     parser = Trainer.add_argparse_args(parser)
