@@ -1,11 +1,31 @@
-export CUDA_VISIBLE_DEVICES=0,1
+export CUDA_VISIBLE_DEVICES=1
+export CUBLAS_WORKSPACE_CONFIG=":16:8" # https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
+export PYTHONHASHSEED=0
 
-version=1017
-log_dir=/core/lightning_logs/
+DATE=`date +%Y%m%d`
+model_name=baseline_net
+TASK_TYPE=base
 
-nohup python main.py --gpus=1 \
-    --batch_size 16 \
-    --num_workers 8 \
-    --seed  0 \
-    --lr 5e-5 \
-    >> ${log_dir}/single_gpu_${version}.log 2>&1 &
+bsz=16
+seed=0
+lr=5e-5
+lr_scheduler="step"
+loss="focal"
+optimizer='AdamW'
+exp_name=${model_name}.${TASK_TYPE}.${bsz}.${lr}.${loss}.${DATE}
+SAVE=lightning_logs/${exp_name}
+echo "${SAVE}"
+
+python core/main.py --gpus=1 \
+    --model_name ${model_name} \
+    --batch_size ${bsz} \
+    --num_workers 16 \
+    --seed  ${seed} \
+    --lr ${lr} \
+    --loss ${loss} \
+    --data_dir "./dataset" \
+    --log_dir "lightning_logs"\
+    --load_ver ${exp_name} \
+    --lr_scheduler ${lr_scheduler} \
+    --optimizer ${optimizer}
+    # >> ${SAVE}/single_gpu_${version}.log 2>&1 &

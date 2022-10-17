@@ -6,4 +6,5 @@ pip install pytorch-lightning
 pip install pandas
 pip install sklearn
 pip install pathlib2 
+pip install Pillow
 ```

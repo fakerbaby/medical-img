@@ -72,6 +72,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', default=5e-5, type=float)
 
     # LR Scheduler
+    parser.add_argument('--optimizer', choices=['Adam', 'SGD', 'AdamW'], type=str)
     parser.add_argument('--lr_scheduler', choices=['step', 'cosine'], type=str)
     parser.add_argument('--lr_decay_steps', default=20, type=int)
     parser.add_argument('--lr_decay_rate', default=0.5, type=float)
@@ -116,5 +117,5 @@ if __name__ == '__main__':
     # List Arguments
     args.mean_sen = [0.485, 0.456, 0.406]
     args.std_sen = [0.229, 0.224, 0.225]
-
+    print("used args:", args)
     main(args)
