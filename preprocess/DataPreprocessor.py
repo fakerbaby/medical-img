@@ -1,10 +1,3 @@
-"""
-@time = time
-@author = shenwei
-"""
-from asyncio.log import logger
-from email.mime import base
-from hashlib import new
 import os
 import shutil
 import re
@@ -39,11 +32,11 @@ class DataPreprocessor():
     def uncompress_files(self):
         if "data" not in os.listdir(self.path):
             try:
-                os.mkdir("data")
+                os.mkdir("dataset")
             except OSError as e:
                 print("\"data\"", e.strerror)
          
-        path = os.path.join(self.path, 'data')
+        path = os.path.join(self.path, 'dataset')
         if os.path.isdir(path):
             dicts = os.listdir(path)
             for dict in dicts:
@@ -116,7 +109,7 @@ class DataPreprocessor():
         """
         collect data by self.dict(datapath list)
         """
-        origin = os.path.join(self.path, "data", "origin")
+        origin = os.path.join(self.path, "dataset", "origin")
 
         try:
             os.mkdir(origin)
@@ -139,7 +132,7 @@ class DataPreprocessor():
 
 
     def generate_csv(self):
-        path = os.path.join(self.path, 'data')
+        path = os.path.join(self.path, 'dataset')
         names = ['img', 'label']
         label = []
         csv_path = os.path.join(path, 'csv')
@@ -172,7 +165,7 @@ class DataPreprocessor():
     def clean_compressed_files(self):
         if "data" not in os.listdir(self.path):
             assert("no data directory here.")
-        path = os.path.join(self.path, 'data')
+        path = os.path.join(self.path, 'dataset')
         if os.path.isdir(path):
             dicts = os.listdir(path)
             for dict in dicts:
@@ -185,7 +178,7 @@ class DataPreprocessor():
         print("clean uncompressed files complete!")
 
     def wash_data(self):
-        path = os.path.join(self.path, "data")
+        path = os.path.join(self.path, "dataset")
         temp_files_list = os.listdir(path)
         temp_files_list.remove("origin")
         for tmp in temp_files_list:
@@ -212,7 +205,7 @@ class DataPreprocessor():
         print("add postfix complete!")
 
     def convert_dcm_jpg_to_bmp(self):
-        path = os.path.join(self.path, "data", "origin")
+        path = os.path.join(self.path, "dataset", "origin")
         tmp_list = os.listdir(path)
         for tmp in tmp_list:
             if fnmatch(tmp, "*.dcm") or fnmatch(tmp, "*.jpg"):
@@ -232,7 +225,7 @@ def find_by_pattern(filename):
     
 
 if __name__ == '__main__':
-    path = "../../medical-img"
+    path = "../"
     preprocessor = DataPreprocessor(path=path)
     # unzip your data
     # preprocessor.uncompress_files()
@@ -246,7 +239,7 @@ if __name__ == '__main__':
     # preprocessor.collect_datalist()
     # preprocessor.wash_data()
     # preprocessor.add_file_type_postfix()
-    preprocessor.convert_dcm_jpg_to_bmp()
+    # preprocessor.convert_dcm_jpg_to_bmp()
     
     #generate_csv
     preprocessor.generate_csv()
