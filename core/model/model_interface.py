@@ -74,7 +74,7 @@ class MInterface(pl.LightningModule):
             )
         elif self.hparams.optimizer == 'SGD':
             optimizer = torch.optim.SGD(
-                self.parameters(), lr=self.hparams.lr, weight_decay=weight_decay
+                self.parameters(), lr=self.hparams.lr, momentum=0.9, weight_decay=weight_decay
             )
         elif self.hparams.optimizer == 'AdamW':
             optimizer = torch.optim.AdamW(
@@ -180,10 +180,10 @@ class FocalLoss(nn.Module):
         preds_softmax = torch.exp(preds_logsoft)    # softmax
         # print(labels[:, 0])
         # cause binary classification, we just clip labels into one dimesion
-        preds_softmax = preds_softmax.gather(1, labels[:, 0].view(-1,1))   # 这部分实现nll_loss ( crossempty = log_softmax + nll )
-        preds_logsoft = preds_logsoft.gather(1, labels[:, 0].view(-1,1))
+        preds_softmax = preds_softmax.gather(1, labels[:, 1].view(-1,1))   # 这部分实现nll_loss ( crossempty = log_softmax + nll )
+        preds_logsoft = preds_logsoft.gather(1, labels[:, 1].view(-1,1))
 
-        self.alpha = self.alpha.gather(0, labels[:, 0].view(-1))
+        self.alpha = self.alpha.gather(0, labels[:, 1].view(-1))
         loss = -torch.mul(torch.pow((1-preds_softmax), self.gamma), preds_logsoft)  # torch.pow((1-preds_softmax), self.gamma) 为focal loss中 (1-pt)**γ
 
         loss = torch.mul(self.alpha, loss.t())

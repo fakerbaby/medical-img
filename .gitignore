@@ -4,3 +4,6 @@
 /lightning_logs/*
 */__pycache__/*
 /core/*/__pycache__/*
+./single_gpu*
+
+./pl_logs/*
