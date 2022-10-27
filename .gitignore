@@ -7,3 +7,5 @@
 ./single_gpu*
 
 ./pl_logs/*
+./wandb/*
+./lancet/*
