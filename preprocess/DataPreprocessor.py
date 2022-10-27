@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 import csv
 import pandas as pd
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -216,6 +217,13 @@ class DataPreprocessor():
                 os.remove(old_name)
         print("convertion complete!")
 
+    def add_mask_frame(self):
+        """
+        for all origin files
+        """
+        
+    
+    
 def find_by_pattern(filename):
     s = r'A\w*-\w*-\w*-P0_\w*-\w*-\w'
     pattern = re.compile(s)

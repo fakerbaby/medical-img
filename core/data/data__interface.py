@@ -15,12 +15,12 @@
 
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, random_split
-# from torch.utils.data.sampler import WeightedRandomSampler
+from torch.utils.data.sampler import WeightedRandomSampler
 import inspect
 import importlib
 
 class DInterface(pl.LightningDataModule):
-    def __init__(self, num_workers=8, dataset='img', **kwargs):
+    def __init__(self, num_workers=8, dataset='img_data', **kwargs):
         super().__init__()
         self.dataset = dataset
         self.num_workers = num_workers
@@ -38,6 +38,9 @@ class DInterface(pl.LightningDataModule):
         if stage == 'test' or stage is None:
             self.trainset = self.instancialize(train=False)
             
+    # def train_dataloader(self):
+    #     sampler = WeightedRandomSampler(self.sample_weight, len(self.trainset)*20)
+    #     return DataLoader(self.trainset, batch_size=self.batch_size, num_workers=self.num_workers, sampler = sampler)
     
     def train_dataloader(self):
         return DataLoader(self.trainset, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
@@ -78,3 +81,6 @@ class DInterface(pl.LightningDataModule):
             
 
 
+# if __name__=="__main__":
+    # a = DInterface(batch_size=32)
+    

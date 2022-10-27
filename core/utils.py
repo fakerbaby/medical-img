@@ -19,7 +19,7 @@ def load_model_path(root=None, version=None, v_num=None, best=False):
         epoch=int(name.split('-')[1].split('=')[1])
         return epoch
     
-    def generate_root():
+    def generate_root(root, version, v_num):
         if root is not None:
             return root
         elif version is not None:
@@ -30,7 +30,7 @@ def load_model_path(root=None, version=None, v_num=None, best=False):
     if root==version==v_num==None:
         return None
 
-    root = generate_root()
+    root = generate_root(root, version, v_num)
     if Path(root).is_file():
         return root
     if best:
@@ -42,4 +42,6 @@ def load_model_path(root=None, version=None, v_num=None, best=False):
     return res
 
 def load_model_path_by_args(args):
+    print(args.load_dir)
+    print(args.load_ver)
     return load_model_path(root=args.load_dir, version=args.load_ver, v_num=args.load_v_num)

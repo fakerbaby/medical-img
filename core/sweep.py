@@ -26,6 +26,26 @@ from data.data__interface import DInterface
 from model.model_interface import MInterface
 from utils import load_model_path_by_args
 from pytorch_lightning.loggers.wandb import WandbLogger
+import wandb
+
+
+sweep_config = {
+    'method': 'random',
+    'name': 'sweep_1',
+    'metric': {
+        'goal': 'maximize',
+        'name': 'val/acc'
+    },
+    'parameters':{
+        # 'batch_size': {'value': []},
+        # 'epoch':{'value':[]},
+        'lr': {'value':[5e-3, 5e-4, 5e-5, 5e-6]},
+        'weight_decay': {'value':[1e-2]},
+        'seed': {'value': [0,42,2048]},
+        'alpha': {'value': [0.25]},
+        'gamma':{'value':[2]}
+    }
+}
 
 
 def load_callbacks(patience=10, save_top_k=None):
@@ -51,7 +71,8 @@ def load_callbacks(patience=10, save_top_k=None):
             logging_interval='epoch'))
     return callbacks
 
-def main(args):
+def main():
+    global args
     pl.seed_everything(args.seed)
     load_path = load_model_path_by_args(args)
     data_module = DInterface(**vars(args))
@@ -62,12 +83,13 @@ def main(args):
     else:
         model = MInterface(**vars(args))
         args.resume_from_checkpoint = load_path
+    # callbacks=load_callbacks(patience=args.patience)
     #wandb logger
     wandb_logger = WandbLogger(project="lancet", name=args.log_dir)
     #local tensorboard logger
     logger = TensorBoardLogger(save_dir='pl_logs', name=args.log_dir)
 
-    args.callbacks = load_callbacks(patience=args.patience)
+    args.callbacks = load_callbacks()
     args.logger = wandb_logger
     trainer = Trainer(logger=wandb_logger).from_argparse_args(args)
     trainer.fit(model, data_module)
@@ -84,7 +106,7 @@ if __name__ == '__main__':
     # LR Scheduler
     parser.add_argument('--optimizer', choices=['Adam', 'SGD', 'AdamW'], type=str)
     parser.add_argument('--lr_scheduler', choices=['step', 'cosine', 'linear'], type=str)
-    parser.add_argument('--lr_decay_steps', default=25000, type=int)
+    parser.add_argument('--lr_decay_steps', default=15000, type=int)
     parser.add_argument('--lr_decay_rate', default=0.5, type=float)
     parser.add_argument('--lr_decay_min_lr', default=1e-8, type=float)
 
@@ -124,11 +146,13 @@ if __name__ == '__main__':
     #     parser.add_argument_group(title="pl.Trainer args"))
 
     # Reset Some Default Trainer Arguments' Default Values
-    parser.set_defaults(max_epochs=100)
+    parser.set_defaults(max_epochs=1)
     args = parser.parse_args()
-
     # List Arguments
     args.mean_sen = [0.485, 0.456, 0.406]
     args.std_sen = [0.229, 0.224, 0.225]
-    print("used args:", args)
-    main(args)
+    # print("used args:", args)
+
+    sweep_id = wandb.sweep(sweep=sweep_config, project='lancet')
+    wandb.agent(sweep_id=sweep_id, function=main)
+    # main(args)

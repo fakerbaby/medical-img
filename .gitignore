@@ -6,6 +6,6 @@
 /core/*/__pycache__/*
 ./single_gpu*
 
-./pl_logs/*
-./wandb/*
-./lancet/*
+pl_logs/*
+wandb/*
+lancet/*
