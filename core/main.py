@@ -59,6 +59,7 @@ def main(args):
         model = MInterface(**vars(args))
         args.resume_from_checkpoint = load_path
 
+    print(load_path)
     trainer = Trainer.from_argparse_args(args)
     trainer.fit(model, data_module)
     
@@ -120,7 +121,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # List Arguments
+    
     args.mean_sen = [0.485, 0.456, 0.406]
     args.std_sen = [0.229, 0.224, 0.225]
-
+    print("used args:", args)
     main(args)

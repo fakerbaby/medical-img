@@ -3,7 +3,7 @@ import time
 from pathlib2 import Path
 
 
-def load_model_path(root=None, version=None, v_num=None, best=False):
+def load_model_path(root, version, v_num, best=False):
     """ When best = True, return the best model's path in a directory 
         by selecting the best model with largest epoch. If not, return
         the last model saved. You must provide at least one of the 
@@ -20,7 +20,7 @@ def load_model_path(root=None, version=None, v_num=None, best=False):
         epoch=int(name.split('-')[1].split('=')[1])
         return epoch
     
-    def generate_root():
+    def generate_root(root, version, v_num):
         if root is not None:
             return root
         elif version is not None:
@@ -31,7 +31,7 @@ def load_model_path(root=None, version=None, v_num=None, best=False):
     if root==version==v_num==None:
         return None
 
-    root = generate_root()
+    root = generate_root(root, version, v_num)
     if Path(root).is_file():
         return root
     if best:
