@@ -8,7 +8,7 @@ model_name=res_net152
 dataset=resnet_data
 TASK_TYPE=base
 
-bsz=32
+bsz=16
 seed=42
 lr=5e-6
 weight_decay=5e-1
@@ -16,6 +16,7 @@ max_epochs=300
 lr_scheduler="cosine"
 loss="focal"
 optimizer='AdamW'
+report_to="none"
 
 #earlystop
 patience=20
@@ -73,5 +74,5 @@ else
         --alpha ${alpha} \
         --no_augment  \
         --patience ${patience} \
-        >> lancet/${exp_name}.log 2>&1 &
+        >> ${exp_name}.log 2 >&1 &
 fi

@@ -44,6 +44,7 @@ class MInterface(pl.LightningModule):
 
         # for tracking best so far validation accuracy
         self.val_acc_best = MaxMetric()
+        self.preds, self.target = [], []
         self.classification = {}
         
         
@@ -55,7 +56,7 @@ class MInterface(pl.LightningModule):
         # by default lightning executes validation step sanity checks before training starts,
         # so we need to make sure val_acc_best doesn't store accuracy from these checks
         self.val_acc_best.reset()
-    
+
     
     def step(self, batch):
         x, y = batch
@@ -85,6 +86,12 @@ class MInterface(pl.LightningModule):
         self.val_acc(preds, targets)
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
+        # recall 
+        list1 = (preds > 0.5).tolist() 
+        list2 = targets.tolist()
+        print(list1, list2)
+        self.preds.extend(list1)
+        self.target.extend(list2)
 
         return {"loss": loss, "preds": preds, "targets": targets}
 
@@ -93,14 +100,9 @@ class MInterface(pl.LightningModule):
         # Here we just reuse the validation_step for testing
         return self.validation_step(batch, batch_idx)
 
-    
    
     def training_epoch_end(self, outputs):
-        list1 = outputs[0]['preds'].cpu() > 0.5
-        list2 = outputs[0]['targets'].cpu()
-        target_names = ['negative', 'positive']
-        self.classification["train"] = classification_report(list1, list2, target_names=target_names, digits=5)
-        print("train/report:", self.classification["train"])
+        pass
      
      
     def validation_epoch_end(self, outputs):
@@ -110,10 +112,8 @@ class MInterface(pl.LightningModule):
         # otherwise metric would be reset by lightning after each epoch
         self.log("val/acc_best", self.val_acc_best.compute(), prog_bar=True)
         
-        list1 = outputs[0]['preds'].cpu() > 0.5
-        list2 = outputs[0]['targets'].cpu()
         target_names = ['negative', 'positive']
-        self.classification["test"] = classification_report(list1, list2, target_names=target_names, digits=5)
+        self.classification["test"] = classification_report(self.preds, self.target, target_names=target_names, digits=5)
         print("test/report:", self.classification["test"])
 
 

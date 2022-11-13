@@ -8,7 +8,7 @@ import torchvision.models as models
 class ResNet152(nn.Module):
     def __init__(self):
         super().__init__()
-        self.module = models.resnet152(pretrained=True)
+        self.module = models.resnet18(pretrained=True)
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
             # nn.Linear(1000, 128),
