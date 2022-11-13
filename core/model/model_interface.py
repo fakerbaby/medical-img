@@ -61,14 +61,15 @@ class MInterface(pl.LightningModule):
     def step(self, batch):
         x, y = batch
         logits = self.forward(x)
+        # print(logits)
         loss = self.loss_function(logits, y)
-        preds = torch.argmax(logits, dim=1)
-        return loss, preds, y.to(torch.int).squeeze()
+        # preds = logits > 0.5
+        return loss, logits.squeeze(), y.to(torch.int).squeeze()
     
     
     def training_step(self, batch, batch_idx):
         loss, preds, targets = self.step(batch)
-        
+        # print(preds)
          # update and log metrics
         self.train_loss(loss)
         self.train_acc(preds, targets)

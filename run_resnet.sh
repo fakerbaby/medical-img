@@ -10,12 +10,12 @@ TASK_TYPE=base
 
 bsz=16
 seed=42
-lr=5e-6
+lr=1e-6
 weight_decay=5e-1
 max_epochs=300
 lr_scheduler="cosine"
 loss="focal"
-optimizer='AdamW'
+optimizer='SGD'
 report_to="none"
 
 #earlystop
@@ -50,7 +50,8 @@ then
         --gamma ${gamma} \
         --alpha ${alpha} \
         --no_augment  \
-        --patience ${patience}
+        --patience ${patience} \
+        --report_to ${report_to}
         # --precision ${precision} \     
         # --load_ver ${exp_name} \
         # --load_v_num ${exp_name} \
