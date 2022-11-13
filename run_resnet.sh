@@ -10,7 +10,7 @@ TASK_TYPE=base
 
 bsz=16
 seed=42
-lr=1e-6
+lr=1e-4
 weight_decay=5e-1
 max_epochs=300
 lr_scheduler="cosine"

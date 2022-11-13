@@ -115,11 +115,35 @@ class MInterface(pl.LightningModule):
         # otherwise metric would be reset by lightning after each epoch
         self.log("val/acc_best", self.val_acc_best.compute(), prog_bar=True)
         
-        target_names = ['negative', 'positive']
+        target_names = ['positive', 'negative']
         self.classification["test"] = classification_report(self.preds, self.target, target_names=target_names, digits=5)
-        print("test/report:", self.classification["test"])
+        print(self.classification["test"])
+        #reset
+        self.preds, self.target = [], []
 
+        # learning rate warm-up
+    def optimizer_step(
+        self,
+        epoch,
+        batch_idx,
+        optimizer,
+        optimizer_idx,
+        optimizer_closure,
+        on_tpu=False,
+        using_native_amp=False,
+        using_lbfgs=False,
+    ):
+        # update params
+        optimizer.step(closure=optimizer_closure)
 
+        if self.hparams.warmup_steps == 0:
+            return 
+        # skip the first 500 steps
+        elif self.trainer.global_step < self.hparams.warmup_steps:
+            lr_scale = min(1.0, float(self.trainer.global_step + 1) / self.hparams.warmup_steps)
+            for pg in optimizer.param_groups:
+                pg["lr"] = lr_scale * self.hparams.lr
+                self.log("lr_steps", pg["lr"], on_step=True, prog_bar=False, logger=True)
 
     def configure_optimizers(self):
         if hasattr(self.hparams, 'weight_decay'):
