@@ -70,7 +70,8 @@ class MInterface(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         loss, preds, targets = self.step(batch)
         # print(preds)
-         # update and log metrics
+         # update and log metrics 
+        preds = preds > 0.5 
         self.train_loss(loss)
         self.train_acc(preds, targets)
         self.log('train/loss', self.train_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
@@ -83,12 +84,13 @@ class MInterface(pl.LightningModule):
         loss, preds, targets = self.step(batch)
         
         # update and log metrics
+        preds = preds > 0.5 
         self.val_loss(loss)
         self.val_acc(preds, targets)
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
         # recall 
-        list1 = (preds > 0.5).tolist() 
+        list1 = preds.tolist() 
         list2 = targets.tolist()
         print(list1, list2)
         self.preds.extend(list1)
