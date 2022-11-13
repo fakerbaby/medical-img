@@ -83,6 +83,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', default=5e-5, type=float)
     
     # LR Scheduler
+    parser.add_argument('--warmup_steps', default="0", type=int)
     parser.add_argument('--optimizer', choices=['Adam', 'SGD', 'AdamW'], type=str)
     parser.add_argument('--lr_scheduler', choices=['step', 'cosine', 'linear'], type=str)
     parser.add_argument('--lr_decay_steps', default=250, type=int)
