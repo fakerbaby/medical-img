@@ -116,12 +116,13 @@ class MInterface(pl.LightningModule):
         self.log("val/acc_best", self.val_acc_best.compute(), prog_bar=True)
         
         target_names = ['positive', 'negative']
-        self.classification["test"] = classification_report(self.preds, self.target, target_names=target_names, digits=5)
+        self.classification["test"] = classification_report(self.target, self.preds, target_names=target_names, digits=5)
         print(self.classification["test"])
         #reset
         self.preds, self.target = [], []
 
-        # learning rate warm-up
+
+    # learning rate warm-up
     def optimizer_step(
         self,
         epoch,
