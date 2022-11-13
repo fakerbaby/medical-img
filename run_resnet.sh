@@ -1,21 +1,21 @@
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=5
 # export CUBLAS_WORKSPACE_CONFIG=":16:8" # https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
 # export PYTHONHASHSEED=0
 
-debug="false"
+debug="true"
 DATE=`date +%Y%m%d`
 model_name=res_net152
 dataset=resnet_data
 TASK_TYPE=base
 
-bsz=16
+bsz=32
 seed=42
-lr=5e-3
-weight_decay=1e-1
+lr=5e-6
+weight_decay=5e-1
 max_epochs=300
 lr_scheduler="cosine"
 loss="focal"
-optimizer='SGD'
+optimizer='AdamW'
 
 #earlystop
 patience=20
@@ -36,7 +36,7 @@ then
         --model_name ${model_name} \
         --dataset ${dataset} \
         --batch_size ${bsz} \
-        --num_workers 16 \
+        --num_workers 0 \
         --max_epochs ${max_epochs} \
         --seed  ${seed} \
         --lr ${lr} \

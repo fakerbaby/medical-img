@@ -8,11 +8,11 @@ import torchvision.models as models
 class ResNet152(nn.Module):
     def __init__(self):
         super().__init__()
-        self.module = models.resnet152(weights='DEFAULT')
+        self.module = models.resnet152(pretrained=True)
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
             # nn.Linear(1000, 128),
-            nn.Linear(1000, 2),
+            nn.Linear(1000, 1),
             # nn.Sigmoid()
         )
     
@@ -20,7 +20,7 @@ class ResNet152(nn.Module):
         # x = self.autoencoder(x)
         x = self.module.forward(x)
         x = self.classifier(x)
-        x = torch.relu(x)
+        x = nn.functional.softmax(x)
         return x
 
 
