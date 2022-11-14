@@ -14,6 +14,7 @@
 
 
 import inspect
+from pickletools import optimize
 import torch
 import importlib
 import torch.nn as nn
@@ -28,6 +29,8 @@ import pytorch_lightning as pl
 class MInterface(pl.LightningModule):
     def __init__(self, model_name, loss, lr, **kargs):
         super().__init__()
+        # lr_scheduler
+        self.atuomatic_optimization = False
         self.save_hyperparameters()
         self.load_model()
         self.configure_loss()
@@ -44,7 +47,7 @@ class MInterface(pl.LightningModule):
 
         # for tracking best so far validation accuracy
         self.val_acc_best = MaxMetric()
-
+    
     def forward(self, img):
         return self.model(img)
 
@@ -58,31 +61,36 @@ class MInterface(pl.LightningModule):
         x, y = batch
         logits = self.forward(x)
         loss = self.loss_function(logits, y)
-        preds = torch.argmax(logits, dim=1)
+        preds = logits > 0.5
+        y = y.to(torch.int)
         return loss, preds, y
     
     
     def training_step(self, batch, batch_idx):
+        
         loss, preds, targets = self.step(batch)
         
+    
          # update and log metrics
         self.train_loss(loss)
-        self.train_acc(preds, targets.squeeze(1))
+        self.train_acc(preds, targets)
+        # caculate some customed metrics
+        
         self.log('train/loss', self.train_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self.log('train/acc', self.train_acc, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         
         return {"loss": loss, "preds": preds, "targets": targets}
 
-    def training_epoch_end(self, outputs):
+    def training_epoch_end(self, optimizer):
         pass
     
     
     def validation_step(self, batch, batch_idx):
         loss, preds, targets = self.step(batch)
-        
+        # print(preds)
         # update and log metrics
         self.val_loss(loss)
-        self.val_acc(preds, targets.squeeze(1))
+        self.val_acc(preds, targets)
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
 
@@ -100,11 +108,37 @@ class MInterface(pl.LightningModule):
         # otherwise metric would be reset by lightning after each epoch
         self.log("val/acc_best", self.val_acc_best.compute(), prog_bar=True)
 
+
+
+    def optimizer_step( self,
+        epoch,
+        batch_idx,
+        optimizer,
+        optimizer_idx,
+        optimizer_closure,
+        on_tpu=False,
+        using_native_amp=False,
+        using_lbfgs=False,):
+        # update params
+        optimizer.step(closure=optimizer_closure)
+
+        skip = self.hparams.warmup_steps
+         # skip the first 2700 steps
+        if self.trainer.global_step < skip:
+            lr_scale = min(1., float(self.trainer.global_step + 1) / skip)
+            for pg in optimizer.param_groups:
+                pg['lr'] = lr_scale * self.hparams.lr
+                self.log("lr",  pg['lr'] ,  on_epoch=True, prog_bar=True)
+       
+        optimizer.step()
+        optimizer.zero_grad()
+
     def configure_optimizers(self):
         if hasattr(self.hparams, 'weight_decay'):
             weight_decay = self.hparams.weight_decay
         else:
             weight_decay = 0
+        
         if self.hparams.optimizer == 'Adam':
             optimizer = torch.optim.Adam(
                 self.parameters(), lr=self.hparams.lr, weight_decay=weight_decay
@@ -115,11 +149,11 @@ class MInterface(pl.LightningModule):
             )
         elif self.hparams.optimizer == 'AdamW':
             optimizer = torch.optim.AdamW(
-                self.parameters(),lr=self.hparams.lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=weight_decay, amsgrad=False
+                self.parameters(),lr=self.hparams.lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=weight_decay, amsgrad=True
             )
-
         if self.hparams.lr_scheduler is None:
             return optimizer
+
         else:
             if self.hparams.lr_scheduler == 'step':
                 scheduler = lrs.StepLR(optimizer,
@@ -133,6 +167,8 @@ class MInterface(pl.LightningModule):
                 scheduler = lrs.LinearLR(optimizer)
             else:
                 raise ValueError('Invalid lr_scheduler type!')
+            # if self.hparams.warmup_rate
+
             return [optimizer], [scheduler]
 
     def configure_loss(self):
@@ -163,6 +199,11 @@ class MInterface(pl.LightningModule):
                 f'Invalid Module File Name or Invalid Class Name {name}.{camel_name}!')
         self.model = self.instancialize(Model)
 
+    def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
+        return self(batch)
+
+
+
     def instancialize(self, Model, **other_args):
         """ Instancialize a model using the corresponding parameters
             from self.hparams dictionary. You can also input any args
@@ -177,7 +218,7 @@ class MInterface(pl.LightningModule):
         args1.update(other_args)
         return Model(**args1)
 
-        
+
         
 class FocalLoss(nn.Module):
     def __init__(self, alpha=0.25, gamma=2, num_classes=2, size_average=True):
@@ -280,3 +321,6 @@ class focal_loss(nn.Module):
         else:
             loss = loss.sum()
         return loss
+    
+    
+

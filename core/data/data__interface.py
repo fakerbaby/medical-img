@@ -38,6 +38,7 @@ class DInterface(pl.LightningDataModule):
         if stage == 'test' or stage is None:
             self.trainset = self.instancialize(train=False)
             
+            
     # def train_dataloader(self):
     #     sampler = WeightedRandomSampler(self.sample_weight, len(self.trainset)*20)
     #     return DataLoader(self.trainset, batch_size=self.batch_size, num_workers=self.num_workers, sampler = sampler)

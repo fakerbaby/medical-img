@@ -22,6 +22,7 @@ class ResnetData(Dataset):
         self.__dict__.update(locals())
         self.aug = train and not no_augment
         self.check_files()
+        self.class_num = class_num
         
     
     def check_files(self):
@@ -43,11 +44,8 @@ class ResnetData(Dataset):
         return len(self.path_list)
     
     def to_one_hot(self, idx):
-        out = np.zeros(self.class_num, dtype='int64')
-        if self.class_num == 1:
-            out[0] = idx
-        else:
-            out[idx] = 1
+        out = np.ones(self.class_num, dtype='int64')
+        out[0] = idx
         return out
     
     def __getitem__(self, idx):
@@ -57,7 +55,7 @@ class ResnetData(Dataset):
         img = Image.open(path).convert('RGB')
         label = self.path_list.iloc[idx, 1]
         labels = self.to_one_hot(label)
-        labels = torch.from_numpy(labels)
+        labels = torch.from_numpy(labels).float()
         #augment
         if self.no_augment is not True:
             trans = transforms.Compose([
@@ -75,15 +73,18 @@ class ResnetData(Dataset):
             )
         else:
             trans = transforms.Compose([
-                transforms.Resize((512, 512)),
-                # transforms.CenterCrop(500),
+                transforms.Resize((224, 224)),
+                # # transforms.CenterCrop(492),
+                # transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
                 # transforms.RandomHorizontalFlip(self.aug_prob),
                 # transforms.RandomVerticalFlip(self.aug_prob),
+                # transforms.RandomGrayscale(p=0.1),
+                # transforms.RandomRotation(10),
                 transforms.ToTensor(),
                 transforms.Normalize(self.img_mean, self.img_std)]
             ) if self.train else transforms.Compose([
-                transforms.Resize((512, 512)),
-                # transforms.CenterCrop(256),
+                transforms.Resize((224, 224)),
+                # transforms.CenterCrop(492),
                 transforms.ToTensor(),
                 transforms.Normalize(self.img_mean, self.img_std)]
             )
@@ -98,6 +99,7 @@ if __name__ == '__main__':
     print(a.path_list, a.label_dict)
     print(len(a))
     print(a[0][0].shape)
-    print(a[12332][1:])
-    print(a[3][1:])
+    print(a[0][1:])
+
+    print(a[8005][1:])
     print(len(a))

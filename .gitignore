@@ -9,3 +9,5 @@
 pl_logs/*
 wandb/*
 lancet/*
+
+core/*

@@ -73,12 +73,13 @@ class VitData(Dataset):
             )
         else:
             trans = transforms.Compose([
-                transforms.Resize((512, 512)),
+                transforms.Resize((240, 240)),
+                transforms.CenterCrop(224),
                 transforms.ToTensor(),
                 transforms.Normalize(self.img_mean, self.img_std)]
             ) if self.train else transforms.Compose([
-                # transforms.CenterCrop(128),
-                transforms.Resize((512, 512)),
+                transforms.Resize((240, 240)),
+                transforms.CenterCrop(224),
                 transforms.ToTensor(),
                 transforms.Normalize(self.img_mean, self.img_std)]
             )

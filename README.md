@@ -9,3 +9,13 @@ pip install sklearn
 pip install pathlib2 
 pip install Pillow
 ```
+
+
+
+
+
+# Multi-instance learning 
+Usage:
+Data
+Each instance is feature vector with fixed length. A bag contains variable number of these instances. Each instance has an id specifying, which bag does it belong to. Ids of instances are stored in vector with length equal to number of instances.
+Create an instance of MilDataset by passing it instances, ids and labels of bags.
