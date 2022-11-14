@@ -24,7 +24,7 @@ from torchmetrics import MaxMetric, MeanMetric
 from torchmetrics.classification.accuracy import Accuracy
 import pytorch_lightning as pl
 # from pytorch_lightning.loggers import WandbLogger
-
+from sklearn.metrics import classification_report
 
 class MInterface(pl.LightningModule):
     def __init__(self, model_name, loss, lr, **kargs):
@@ -47,7 +47,10 @@ class MInterface(pl.LightningModule):
 
         # for tracking best so far validation accuracy
         self.val_acc_best = MaxMetric()
-    
+        self.preds, self.target = [], []
+        self.classification = {}
+        
+        
     def forward(self, img):
         return self.model(img)
 
@@ -56,57 +59,96 @@ class MInterface(pl.LightningModule):
         # by default lightning executes validation step sanity checks before training starts,
         # so we need to make sure val_acc_best doesn't store accuracy from these checks
         self.val_acc_best.reset()
+
     
     def step(self, batch):
         x, y = batch
         logits = self.forward(x)
+        # print(logits)
         loss = self.loss_function(logits, y)
-        preds = logits > 0.5
-        y = y.to(torch.int)
-        return loss, preds, y
+        # preds = logits > 0.5
+        return loss, logits.squeeze(), y.to(torch.int).squeeze()
     
     
     def training_step(self, batch, batch_idx):
         
         loss, preds, targets = self.step(batch)
-        
-    
-         # update and log metrics
+        # print(preds)
+         # update and log metrics 
+        preds = preds > 0.5 
         self.train_loss(loss)
         self.train_acc(preds, targets)
-        # caculate some customed metrics
-        
         self.log('train/loss', self.train_loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         self.log('train/acc', self.train_acc, on_step=True, on_epoch=True, prog_bar=True, logger=True)
         
         return {"loss": loss, "preds": preds, "targets": targets}
 
-    def training_epoch_end(self, optimizer):
-        pass
-    
     
     def validation_step(self, batch, batch_idx):
         loss, preds, targets = self.step(batch)
         # print(preds)
         # update and log metrics
+        preds = preds > 0.5 
         self.val_loss(loss)
         self.val_acc(preds, targets)
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
+        # recall 
+        list1 = preds.tolist() 
+        list2 = targets.tolist()
+        print(list1, list2)
+        self.preds.extend(list1)
+        self.target.extend(list2)
 
         return {"loss": loss, "preds": preds, "targets": targets}
+
 
     def test_step(self, batch, batch_idx):
         # Here we just reuse the validation_step for testing
         return self.validation_step(batch, batch_idx)
 
-        
-    def on_validation_epoch_end(self):
+   
+    def training_epoch_end(self, outputs):
+        pass
+     
+     
+    def validation_epoch_end(self, outputs):
         acc = self.val_acc.compute()  # get current val acc
         self.val_acc_best(acc)  # update best so far val acc
         # log `val_acc_best` as a value through `.compute()` method, instead of as a metric object
         # otherwise metric would be reset by lightning after each epoch
         self.log("val/acc_best", self.val_acc_best.compute(), prog_bar=True)
+        
+        target_names = ['positive', 'negative']
+        self.classification["test"] = classification_report(self.target, self.preds, target_names=target_names, digits=5)
+        print(self.classification["test"])
+        #reset
+        self.preds, self.target = [], []
+
+
+    # learning rate warm-up
+    def optimizer_step(
+        self,
+        epoch,
+        batch_idx,
+        optimizer,
+        optimizer_idx,
+        optimizer_closure,
+        on_tpu=False,
+        using_native_amp=False,
+        using_lbfgs=False,
+    ):
+        # update params
+        optimizer.step(closure=optimizer_closure)
+
+        if self.hparams.warmup_steps == 0:
+            return 
+        # skip the first 500 steps
+        elif self.trainer.global_step < self.hparams.warmup_steps:
+            lr_scale = min(1.0, float(self.trainer.global_step + 1) / self.hparams.warmup_steps)
+            for pg in optimizer.param_groups:
+                pg["lr"] = lr_scale * self.hparams.lr
+                self.log("lr_steps", pg["lr"], on_step=True, prog_bar=False, logger=True)
 
 
 
@@ -171,6 +213,7 @@ class MInterface(pl.LightningModule):
 
             return [optimizer], [scheduler]
 
+
     def configure_loss(self):
         loss = self.hparams.loss.lower()
         if loss == 'mse':
@@ -180,7 +223,7 @@ class MInterface(pl.LightningModule):
         elif loss == 'bce':
             self.loss_function = F.binary_cross_entropy
         elif loss == 'focal':
-            self.loss_function = focal_loss(alpha=self.hparams.alpha, gamma=self.hparams.gamma)
+            self.loss_function = FocalLoss(alpha=self.hparams.alpha, gamma=self.hparams.gamma)
         else:
             raise ValueError("Invalid Loss Type!")
 
@@ -218,109 +261,20 @@ class MInterface(pl.LightningModule):
         args1.update(other_args)
         return Model(**args1)
 
-
-        
-class FocalLoss(nn.Module):
-    def __init__(self, alpha=0.25, gamma=2, num_classes=2, size_average=True):
-        """
-        focal_loss, -alpha(1-yi)**gama *ce_loss(xi,yi)
-        :param alpha:   阿尔法α,类别权重.      当α是列表时,为各类别权重,当α为常数时,类别权重为[α, 1-α, 1-α, ....],常用于 目标检测算法中抑制背景类 , retainnet中设置为0.25
-        :param gamma:   伽马γ,难易样本调节参数. retainnet中设置为2
-        :param num_classes:     类别数量
-        :param size_average:    损失计算方式,默认取均值
-        """
+class FocalLoss(torch.nn.Module):
+    def __init__(self, gamma=2, alpha=0.25, reduction='mean'):
         super(FocalLoss, self).__init__()
-        self.size_average = size_average
-        if isinstance(alpha, list):
-            assert len(alpha)==num_classes   # α可以以list方式输入,size:[num_classes] 用于对不同类别精细地赋予权重
-            # print(" --- Focal_loss alpha = {}, 将对每一类权重进行精细化赋值 --- ".format(alpha))
-            self.alpha = torch.Tensor(alpha)
-        else:
-            assert alpha<1   #如果α为一个常数,则降低第一类的影响,在目标检测中为第一类
-            # print(" --- Focal_loss alpha = {} ,将对背景类进行衰减,请在目标检测任务中使用 --- ".format(alpha))
-            self.alpha = torch.zeros(num_classes)
-            self.alpha[0] += alpha
-            self.alpha[1:] += (1-alpha) # α 最终为 [ α, 1-α, 1-α, 1-α, 1-α, ...] size:[num_classes]
-
         self.gamma = gamma
+        self.alpha = alpha
+        self.reduction = reduction
 
-    def forward(self, preds, labels):
-        """
-        focal_loss损失计算
-        :param preds:   预测类别. size:[B,N,C] or [B,C]    分别对应与检测与分类任务, B 批次, N检测框数, C类别数
-        :param labels:  实际类别. size:[B,N] or [B]
-        :return:
-        """
-        # assert preds.dim()==2 and labels.dim()==1
-        # labels are 2 dim, so we need to change here
-        preds = preds.view(-1, preds.size(-1))
-        self.alpha = self.alpha.to(preds.device)
-        preds_logsoft = nn.functional.log_softmax(preds, dim=1) # log_softmax
-        preds_softmax = torch.exp(preds_logsoft)    # softmax
-        # print(labels[:, 0])
-        # cause binary classification, we just clip labels into one dimesion
-        preds_softmax = preds_softmax.gather(1, labels.view(-1,1).to(torch.int64))   # 这部分实现nll_loss ( crossempty = log_softmax + nll )
-        preds_logsoft = preds_logsoft.gather(1, labels.view(-1,1).to(torch.int64))
-
-        self.alpha = self.alpha.gather(0, labels.view(-1).to(torch.int64))
-        loss = -torch.mul(torch.pow((1-preds_softmax), self.gamma), preds_logsoft)  # torch.pow((1-preds_softmax), self.gamma) 为focal loss中 (1-pt)**γ
-
-        loss = torch.mul(self.alpha, loss.t()) * 10
-        if self.size_average:
-            loss = loss.mean()
-        else:
-            loss = loss.sum()
+    def forward(self, predict, target):
+        pt = torch.sigmoid(predict) # sigmoide获取概率
+        #在原始ce上增加动态权重因子，注意alpha的写法，下面多类时不能这样使用
+        loss = - self.alpha * (1 - pt) ** self.gamma * target * torch.log(pt) - (1 - self.alpha) * pt ** self.gamma * (1 - target) * torch.log(1 - pt)
+        
+        if self.reduction == 'mean':
+            loss = torch.mean(loss)
+        elif self.reduction == 'sum':
+            loss = torch.sum(loss)
         return loss
-    
-    
-class focal_loss(nn.Module):
-    def __init__(self, alpha=0.25, gamma=2, num_classes=2, size_average=True):
-        """
-        focal_loss, -alpha(1-yi)**gama *ce_loss(xi,yi)
-        :param alpha:   阿尔法α,类别权重.      当α是列表时,为各类别权重,当α为常数时,类别权重为[α, 1-α, 1-α, ....],常用于 目标检测算法中抑制背景类 , retainnet中设置为0.25
-        :param gamma:   伽马γ,难易样本调节参数. retainnet中设置为2
-        :param num_classes:     类别数量
-        :param size_average:    损失计算方式,默认取均值
-        """
-        super(focal_loss,self).__init__()
-        self.size_average = size_average
-        if isinstance(alpha,list):
-            assert len(alpha)==num_classes   # α可以以list方式输入,size:[num_classes] 用于对不同类别精细地赋予权重
-            # print(" --- Focal_loss alpha = {}, 将对每一类权重进行精细化赋值 --- ".format(alpha))
-            self.alpha = torch.Tensor(alpha)
-        else:
-            assert alpha<1   #如果α为一个常数,则降低第一类的影响,在目标检测中为第一类
-            # print(" --- Focal_loss alpha = {} ,将对背景类进行衰减,请在目标检测任务中使用 --- ".format(alpha))
-            self.alpha = torch.zeros(num_classes)
-            self.alpha[0] += alpha
-            self.alpha[1:] += (1-alpha) # α 最终为 [ α, 1-α, 1-α, 1-α, 1-α, ...] size:[num_classes]
-
-        self.gamma = gamma
-
-    def forward(self, preds, labels):
-        """
-        focal_loss损失计算
-        :param preds:   预测类别. size:[B,N,C] or [B,C]    分别对应与检测与分类任务, B 批次, N检测框数, C类别数
-        :param labels:  实际类别. size:[B,N] or [B]
-        :return:
-        """
-        # assert preds.dim()==2 and labels.dim()==1
-        preds = preds.view(-1,preds.size(-1))
-        self.alpha = self.alpha.to(preds.device)
-        preds_logsoft = nn.functional.log_softmax(preds, dim=1) # log_softmax
-        preds_softmax = torch.exp(preds_logsoft)    # softmax
-
-        preds_softmax = preds_softmax.gather(1,labels[:, 0].view(-1,1).to(torch.int64))   # 这部分实现nll_loss ( crossempty = log_softmax + nll )
-        preds_logsoft = preds_logsoft.gather(1,labels[:, 0].view(-1,1).to(torch.int64))
-        self.alpha = self.alpha.gather(0,labels[:, 0].view(-1).to(torch.int64))
-        loss = -torch.mul(torch.pow((1-preds_softmax), self.gamma), preds_logsoft)  # torch.pow((1-preds_softmax), self.gamma) 为focal loss中 (1-pt)**γ
-
-        loss = torch.mul(self.alpha, loss.t()) * 10
-        if self.size_average:
-            loss = loss.mean()
-        else:
-            loss = loss.sum()
-        return loss
-    
-    
-

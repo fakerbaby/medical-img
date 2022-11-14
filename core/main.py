@@ -62,16 +62,14 @@ def main(args):
     else:
         model = MInterface(**vars(args))
         args.resume_from_checkpoint = load_path
-    
-   
-    #local tensorboard logger
-    logger = TensorBoardLogger(save_dir='pl_logs', name=args.log_dir)
+    logger = TensorBoardLogger(save_dir='lightning_logs', name=args.log_dir)
     #wandb logger
-    if args.report_to == 'wandb':       
+    if args.report_to == "wandb":
         logger = WandbLogger(project="lancet", name=args.log_dir)
+    #local tensorboard logger
+    
     args.callbacks = load_callbacks(patience=args.patience)
     args.logger = logger
-    
     trainer = Trainer(logger=logger).from_argparse_args(args)
     trainer.fit(model, data_module)
     
@@ -85,12 +83,12 @@ if __name__ == '__main__':
     parser.add_argument('--lr', default=5e-5, type=float)
     
     # LR Scheduler
+    parser.add_argument('--warmup_steps', default=0, type=int)
     parser.add_argument('--optimizer', choices=['Adam', 'SGD', 'AdamW'], type=str)
     parser.add_argument('--lr_scheduler', choices=['step', 'cosine', 'linear'], type=str)
-    parser.add_argument('--lr_decay_steps', default=100, type=int)
+    parser.add_argument('--lr_decay_steps', default=250, type=int)
     parser.add_argument('--lr_decay_rate', default=0.5, type=float)
     parser.add_argument('--lr_decay_min_lr', default=1e-7, type=float)
-    parser.add_argument('--warmup_steps', default=500, type=int)
 
     # Restart Control
     parser.add_argument('--load_best', action='store_true')
@@ -119,7 +117,7 @@ if __name__ == '__main__':
     # Other
     # parser.add_argument("--TASK_TYPE", default="base", type=str)
     # parser.add_argument('--aug_prob', default=0.5, type=float)
-    parser.add_argument('--report_to', default='None', type=str)
+    parser.add_argument('--report_to', default="none", type=str)
 
     # Add pytorch lightning's args to parser as a group.
     parser = Trainer.add_argparse_args(parser)

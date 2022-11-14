@@ -14,20 +14,19 @@ lr=3e-6
 weight_decay=5e-1
 max_epochs=300
 lr_scheduler="cosine"
-loss="BCE"
-
+loss="focal"
 optimizer='AdamW'
-report_to='none'
-warmup_steps=2500
-
-# earlystop
+report_to="wandb"
+warmup_steps=600
+#earlystop
 patience=50
 # precision=16
 gradient_clip_val=0.1
 alpha=0.25
 gamma=2
+num_workers=16
 
-exp_name=${model_name}.${dataset}.${bsz}.${lr}.${weight_decay}.${loss}.${optimizer}.${alpha}.${gamma}.${DATE}.${max_epochs}.${precision}.${warmup_steps}.${gradient_clip_val}.${TASK_TYPE}
+exp_name=${model_name}.${dataset}.${bsz}.${lr}.${loss}.${optimizer}.${alpha}.${gamma}.${DATE}.${max_epochs}.${precision}.${gradient_clip_val}.${warmup}.${TASK_TYPE}
 SAVE=lightning_logs/${exp_name}
 
 echo "${SAVE}"
@@ -39,7 +38,7 @@ then
         --model_name ${model_name} \
         --dataset ${dataset} \
         --batch_size ${bsz} \
-        --num_workers 16 \
+        --num_workers ${num_workers} \
         --max_epochs ${max_epochs} \
         --seed  ${seed} \
         --lr ${lr} \
@@ -52,9 +51,9 @@ then
         --gamma ${gamma} \
         --alpha ${alpha} \
         --no_augment  \
+        --patience ${patience} \
         --report_to ${report_to} \
         --warmup_steps ${warmup_steps} \
-        --patience ${patience}
         # --precision ${precision} \     
         # --load_ver ${exp_name} \
         # --load_v_num ${exp_name} \
@@ -64,7 +63,7 @@ else
         --model_name ${model_name} \
         --dataset ${dataset} \
         --batch_size ${bsz} \
-        --num_workers 8 \
+        --num_workers ${num_workers} \
         --max_epochs ${max_epochs} \
         --seed  ${seed} \
         --lr ${lr} \
@@ -80,5 +79,7 @@ else
         --report_to ${report_to} \
         --warmup_steps ${warmup_steps} \
         --patience ${patience} \
+        --warmup_steps ${warmup_steps} \
+        --report_to ${report_to} 
         >> ${exp_name}.log 2>&1 &
 fi

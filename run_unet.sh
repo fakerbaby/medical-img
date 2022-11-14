@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=2
+export CUDA_VISIBLE_DEVICES=0
 # export CUBLAS_WORKSPACE_CONFIG=":16:8" # https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
 # export PYTHONHASHSEED=0
 
@@ -15,7 +15,7 @@ weight_decay=1e-2
 max_epochs=300
 lr_scheduler="cosine"
 loss="focal"
-optimizer='Adam'
+optimizer='AdamW'
 
 #earlystop
 patience=30
@@ -36,7 +36,7 @@ then
         --model_name ${model_name} \
         --dataset ${dataset} \
         --batch_size ${bsz} \
-        --num_workers 8 \
+        --num_workers 0 \
         --max_epochs ${max_epochs} \
         --seed  ${seed} \
         --lr ${lr} \
