@@ -1,4 +1,4 @@
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=3
 # export CUBLAS_WORKSPACE_CONFIG=":16:8" # https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
 # export PYTHONHASHSEED=0
 
@@ -10,16 +10,16 @@ TASK_TYPE=base
 
 bsz=16
 seed=42
-lr=1e-4
+lr=5e-5
 weight_decay=5e-1
 max_epochs=300
 lr_scheduler="cosine"
-loss="focal"
-optimizer='SGD'
-report_to="none"
+loss="BCE"
+optimizer='AdamW'
+report_to="wandb"
 warmup_steps=3000
 #earlystop
-patience=20
+patience=50
 # precision=16
 gradient_clip_val=0.1
 alpha=0.25
@@ -78,5 +78,6 @@ else
         --no_augment  \
         --patience ${patience} \
         --warmup_steps ${warmup_steps} \
+        --report_to ${report_to} 
         >> ${exp_name}.log 2>&1 &
 fi

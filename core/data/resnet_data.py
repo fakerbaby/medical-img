@@ -57,7 +57,7 @@ class ResnetData(Dataset):
         img = Image.open(path).convert('RGB')
         label = self.path_list.iloc[idx, 1]
         labels = self.to_one_hot(label)
-        labels = torch.from_numpy(labels)
+        labels = torch.from_numpy(labels).float()
         #augment
         if self.no_augment is not True:
             trans = transforms.Compose([
