@@ -4,20 +4,20 @@ export CUDA_VISIBLE_DEVICES=5
 
 hungup="true"
 DATE=`date +%Y%m%d`
-model_name=res_net152
-dataset=train_resdata
+model_name=res_net_ae_vanilla
+dataset=resnet_data
 TASK_TYPE=base
 
 bsz=64
 seed=42
-lr=3e-5
+lr=3e-6
 weight_decay=5e-1
 max_epochs=300
 lr_scheduler="cosine"
 loss="focal"
 optimizer='AdamW'
 report_to="wandb"
-warmup_steps=480
+warmup_steps=600
 #earlystop
 patience=50
 # precision=16
@@ -25,7 +25,7 @@ gradient_clip_val=0.1
 alpha=0.25
 gamma=2
 num_workers=16
-TASK_TYPE="base"
+TASK_TYPE="cropped"
 
 exp_name=${model_name}.${dataset}.${bsz}.${lr}.${loss}.${optimizer}.${alpha}.${gamma}.${DATE}.${max_epochs}.${precision}.${gradient_clip_val}.${warmup}.${TASK_TYPE}
 SAVE=lightning_logs/${exp_name}

@@ -86,7 +86,7 @@ class ResnetoldData(Dataset):
         else:
             trans = transforms.Compose([
                 transforms.Resize((224, 224)),
-                transforms.CenterCrop(144),
+                # transforms.CenterCrop(144),
                 transforms.ToTensor(),
                 transforms.Normalize(self.img_mean, self.img_std)]
             ) if self.train else transforms.Compose([

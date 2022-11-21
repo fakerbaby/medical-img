@@ -22,7 +22,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 
 from argparse import ArgumentParser
 
-from data.data__interface import DInterface
+from data.data_interface import DInterface
 from model.model_interface import MInterface
 from utils import load_model_path_by_args
 from pytorch_lightning.loggers.wandb import WandbLogger
@@ -38,8 +38,8 @@ def load_callbacks(patience=10, save_top_k=None):
     ))
 
     callbacks.append(plc.ModelCheckpoint(
-        monitor='val/acc',
-        filename='best-{epoch:02d}-{val_acc:.3f}',
+        monitor='val/f1',
+        filename='best-{epoch:02d}-{val_f1:.3f}-{val_acc:.3f}',
         save_top_k=1,
         mode='max',
         save_last=True
@@ -71,11 +71,13 @@ def main(args):
     args.callbacks = load_callbacks(patience=args.patience)
     args.logger = logger
     trainer = Trainer(logger=logger).from_argparse_args(args)
+    # if args.mode == "train":
     trainer.fit(model, data_module)
     
 
 if __name__ == '__main__':
     parser = ArgumentParser()
+    # parser.add_argument("--mode", default="train", choices=['train', 'test'],  type=str)
     #Basic Traning Control
     parser.add_argument('--batch_size', default=32, type=int)
     parser.add_argument('--num_workers', default=48, type=int)
@@ -86,7 +88,7 @@ if __name__ == '__main__':
     parser.add_argument('--warmup_steps', default=0, type=int)
     parser.add_argument('--optimizer', choices=['Adam', 'SGD', 'AdamW'], type=str)
     parser.add_argument('--lr_scheduler', choices=['step', 'cosine', 'linear'], type=str)
-    parser.add_argument('--lr_decay_steps', default=250, type=int)
+    parser.add_argument('--lr_decay_steps', default=300, type=int)
     parser.add_argument('--lr_decay_rate', default=0.5, type=float)
     parser.add_argument('--lr_decay_min_lr', default=1e-7, type=float)
 

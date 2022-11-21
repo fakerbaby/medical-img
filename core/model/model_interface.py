@@ -90,13 +90,13 @@ class MInterface(pl.LightningModule):
         # update and log metrics
         preds = preds > 0.5 
         self.val_loss(loss)
+        # print(preds.shape, targets.shape)
         self.val_acc(preds, targets)
         self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
         # recall 
         list1 = preds.tolist() 
         list2 = targets.tolist()
-        print(list1, list2)
         self.preds.extend(list1)
         self.target.extend(list2)
 
@@ -107,7 +107,28 @@ class MInterface(pl.LightningModule):
         # Here we just reuse the validation_step for testing
         return self.validation_step(batch, batch_idx)
 
-   
+
+    # def predict_step(self, batch, batch_idx, dataloader_idx=0):
+    #     loss, preds, targets = self.step(batch)
+    #     # print(preds)
+    #     # update and log metrics
+    #     preds = preds > 0.5 
+    #     self.val_loss(loss)
+    #     self.val_acc(preds, targets)
+    #     self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
+    #     self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
+    #     # recall 
+    #     list1 = preds.tolist() 
+    #     list2 = targets.tolist()
+    #     print(list1, list2)
+    #     self.preds.extend(list1)
+    #     self.target.extend(list2)
+
+    #     return {"loss": loss, "preds": preds, "targets": targets}
+
+
+
+
     def training_epoch_end(self, outputs):
         pass
      
@@ -117,11 +138,18 @@ class MInterface(pl.LightningModule):
         self.val_acc_best(acc)  # update best so far val acc
         # log `val_acc_best` as a value through `.compute()` method, instead of as a metric object
         # otherwise metric would be reset by lightning after each epoch
-        self.log("val/acc_best", self.val_acc_best.compute(), prog_bar=True)
+        self.log("val/acc_best", self.val_acc_best.compute(), prog_bar=True, logger=True)
         
-        target_names = ['positive', 'negative']
+        target_names = ['negative', 'positive']
         self.classification["test"] = classification_report(self.target, self.preds, target_names=target_names, digits=5)
         print(self.classification["test"])
+        outputs = classification_report(self.target, self.preds, target_names=target_names, digits=5, output_dict= True)
+        recall_po = outputs["positive"]["recall"]
+        recall_ne = outputs["negative"]["recall"]
+        f1 = 2 * recall_po * recall_ne / (recall_po + recall_ne)
+        self.log("val/f1", f1, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val/recall_po", recall_po, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val/recall_ne", recall_ne, on_step=False, on_epoch=True, prog_bar=True)
         #reset
         self.preds, self.target = [], []
 

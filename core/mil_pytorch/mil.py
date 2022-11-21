@@ -25,42 +25,32 @@ class BagModel(nn.Module):
     self.prepNN = prepNN
     self.aggregation_func = aggregation_func
     self.afterNN = afterNN
-
   
-  
-  def forward(self, input):  
+  def forward(self, input, attn):  
     ids = input[1]
     input = input[0]
+    attn = attn
+    
     # Modify shape of bagids if only 1d tensor
     if (len(ids.shape) == 1):
       ids.resize_(1, len(ids))
 
     inner_ids = ids[len(ids)-1]
     device = input.device
-
     NN_out = self.prepNN(input)
-    # print("NN_out", NN_out.shape)
-
     unique, inverse, counts = torch.unique(inner_ids, sorted = True, return_inverse = True, return_counts = True)
     idx = torch.cat([(inverse == x).nonzero()[0] for x in range(len(unique))]).sort()[1]
     bags = unique[idx]
     counts = counts[idx]
-
-    # decide which instance to pass, we assume model can decide cause we can change at late trainning stage
-    #build a gate
+    # NN_out_ = self.gate(NN_out).squeeze()
+    # prob_list = nn.functional.softmax(NN_out_)
+    # max_prob, choose = torch.max(prob_list, 0)
+    # print(max_prob, choose)
     
-    gate = nn.Sequential(
-      nn.Linear(1000, 1),
-      # nn.Softmax()
-    ).to(device)
-    NN_out_ = gate(NN_out.detach()).squeeze()
-    prob_list = nn.functional.softmax(NN_out_)
-    print(prob_list)
-    max_prob, choose = torch.max(prob_list, 0)
-    print(max_prob, choose)
+    # attn decide which instance to pass, we assume model can decide cause we can change at late trainning stage
+    #build a gate
     output = torch.empty((len(bags), len(NN_out[0])), device = device)
-
-    output[0] = NN_out[choose.item()]
+    output[0] = NN_out[attn]
     # output[0] = self.aggregation_func(NN_out)
     
     # for i, bag in enumerate(bags):
@@ -73,8 +63,6 @@ class BagModel(nn.Module):
     #   # print(b)
     # print("before afternn output", output.shape)
     output = self.afterNN(output)
-    # print("after afternn output", output.shape)
-    # output = (output)
     if (ids.shape[0] == 1):
       return output
     else:
@@ -95,7 +83,7 @@ class MilDataset(Dataset):
     labels:
     normalize:
   '''
-  def __init__(self, data, ids, labels, normalize=True):
+  def __init__(self, data, ids, labels, padding=8, normalize=True):
     self.data = data
     self.labels = labels
     self.ids = ids
@@ -103,27 +91,28 @@ class MilDataset(Dataset):
     # Modify shape of bagids if only 1d tensor
     if (len(ids.shape) == 1):
       ids.resize_(1, len(ids))
-  
     self.bags = torch.unique(self.ids[0])
-  
     # Normalize
     if normalize:
       std = self.data.std(dim=0)
       mean = self.data.mean(dim=0)
       self.data = (self.data - mean)/std
-
+  
   def __len__(self):
     return len(self.bags)
   
   def __getitem__(self, index):
+    """
+    index means the bag id
+    """
     data = self.data[self.ids[0] == self.bags[index]]
     bagids = self.ids[:, self.ids[0] == self.bags[index]]
     labels = self.labels[index]
-
+    
     return data, bagids, labels
   
   def n_features(self):
-    return self.data.size(1)
+    return self.data.size(0)
 
 
 def collate(batch):
@@ -146,7 +135,6 @@ def collate(batch):
 
 def collate_np(batch):
   '''
-
   '''
   batch_data = []
   batch_bagids = []
@@ -164,4 +152,4 @@ def collate_np(batch):
   return out_data, out_bagids, out_labels
 
 
-
+  

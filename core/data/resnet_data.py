@@ -20,7 +20,7 @@ class ResnetData(Dataset):
                  ):
         # Set all input args as attributes
         self.__dict__.update(locals())
-        self.aug = train and not no_augment
+        self.aug = train and not self.no_augment
         self.check_files()
         self.class_num = class_num
         
@@ -31,12 +31,12 @@ class ResnetData(Dataset):
         # file, or any other formats. The only thing you need to gua-
         # rantee is the `self.path_list` must be given a valid value. 
         # file_dir = os.path.join(self.data_dir, 'origin')
-        label_file = os.path.join(self.data_dir, 'csv/label.csv')
+        label_file = os.path.join(self.data_dir, 'csv/label_AB_light.csv')
         file_list_path = pd.read_csv(label_file)
         # full_len = len(file_list_path)
         # train_len = int(0.8 * full_len)
         # fl_train, fl_val = random_split(file_list_path, [train_len, full_len - train_len])
-        fl_train, fl_val= train_test_split(file_list_path, test_size=0.2, random_state=42)  
+        fl_train, fl_val= train_test_split(file_list_path, test_size=0.2, random_state=0)  
         self.path_list = fl_train if self.train else fl_val
         self.label_dict = file_list_path
     
@@ -50,31 +50,31 @@ class ResnetData(Dataset):
     
     def __getitem__(self, idx):
         # filename = os.path.splitext(self.path_list.iloc[idx, 0])[0]
-        path = os.path.join(self.data_dir,'origin', self.path_list.iloc[idx, 0])
+        path = os.path.join(self.data_dir,'train_AB_light', self.path_list.iloc[idx, 0])
         # convert img to numpy firstly
         img = Image.open(path).convert('RGB')
         label = self.path_list.iloc[idx, 1]
         labels = self.to_one_hot(label)
         labels = torch.from_numpy(labels).float()
         #augment
-        if self.no_augment is not True:
+        if self.aug:
             trans = transforms.Compose([
-                transforms.RandomHorizontalFlip(self.aug_prob),
-                transforms.RandomVerticalFlip(self.aug_prob),
-                transforms.RandomRotation(10),
-                transforms.Resize((350, 350)),
-                transforms.CenterCrop(256),
+                transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
+                transforms.RandomHorizontalFlip(0.2),
+                transforms.RandomVerticalFlip(0.2),
+                transforms.RandomGrayscale(p=0.1),
+                transforms.RandomRotation(2),
+                transforms.Resize((224, 224)),
                 transforms.ToTensor(),
                 transforms.Normalize(self.img_mean, self.img_std)]
             ) if self.train else transforms.Compose([
-                transforms.Resize((350, 350)),
+                transforms.Resize((224, 224)),
                 transforms.ToTensor(),
                 transforms.Normalize(self.img_mean, self.img_std)]
             )
         else:
             trans = transforms.Compose([
                 transforms.Resize((224, 224)),
-                # # transforms.CenterCrop(492),
                 # transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
                 # transforms.RandomHorizontalFlip(self.aug_prob),
                 # transforms.RandomVerticalFlip(self.aug_prob),

@@ -1,23 +1,23 @@
-export CUDA_VISIBLE_DEVICES=5
+export CUDA_VISIBLE_DEVICES=0
 # export CUBLAS_WORKSPACE_CONFIG=":16:8" # https://docs.nvidia.com/cuda/cublas/index.html#cublasApi_reproducibility
 # export PYTHONHASHSEED=0
 
 hungup="true"
 DATE=`date +%Y%m%d`
-model_name=res_net152
-dataset=train_resdata
+model_name=res_net_sae
+dataset=resnet_data
 TASK_TYPE=base
 
 bsz=64
 seed=42
-lr=3e-5
+lr=3e-6
 weight_decay=5e-1
 max_epochs=300
 lr_scheduler="cosine"
 loss="focal"
 optimizer='AdamW'
 report_to="wandb"
-warmup_steps=480
+warmup_steps=600
 #earlystop
 patience=50
 # precision=16
@@ -86,3 +86,4 @@ else
         >> ${exp_name}.log 2>&1 &
 
 fi
+
